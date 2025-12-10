@@ -38,6 +38,10 @@ class Game {
         
         // Constants
         this.VERSION = "Alpha 0.2";
+        this.FIRST_NAMES = ["Alex", "Jordan", "Sam", "Taylor", "Morgan", "Casey", "Riley", "Avery", 
+                           "Quinn", "Drew", "Blake", "Cameron", "Dakota", "Sage"];
+        this.LAST_NAMES = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", 
+                          "Davis", "Rodriguez", "Martinez", "Anderson", "Taylor", "Thomas"];
         this.NPC_COUNT = 50;
         this.BUILDING_COUNT = 30;
         this.SECONDS_PER_GAME_HOUR = 10;
@@ -97,12 +101,7 @@ class Game {
     }
     
     randomizeName() {
-        const firstNames = ["Alex", "Jordan", "Sam", "Taylor", "Morgan", "Casey", "Riley", "Avery", 
-                           "Quinn", "Drew", "Blake", "Cameron", "Dakota", "Sage"];
-        const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", 
-                          "Davis", "Rodriguez", "Martinez", "Anderson", "Taylor", "Thomas"];
-        
-        const randomName = `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
+        const randomName = `${this.FIRST_NAMES[Math.floor(Math.random() * this.FIRST_NAMES.length)]} ${this.LAST_NAMES[Math.floor(Math.random() * this.LAST_NAMES.length)]}`;
         document.getElementById('characterName').value = randomName;
     }
     
@@ -121,8 +120,10 @@ class Game {
         
         // Distribute the remaining 60 points randomly
         for (let i = 0; i < stats.length - 1; i++) {
-            const maxForThis = remaining - (stats.length - i - 1); // Keep at least 1 for each remaining stat
-            const value = Math.floor(Math.random() * maxForThis);
+            const statsLeft = stats.length - i - 1;
+            // Ensure we leave at least 1 point for each remaining stat
+            const maxForThis = Math.max(0, remaining - statsLeft);
+            const value = Math.floor(Math.random() * (maxForThis + 1));
             values[i] += value;
             remaining -= value;
         }
