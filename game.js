@@ -26,6 +26,7 @@ class Game {
         this.currentInteraction = null;
         
         // Constants
+        this.VERSION = "Alpha 0.2";
         this.NPC_COUNT = 50;
         this.BUILDING_COUNT = 30;
         this.SECONDS_PER_GAME_HOUR = 10;
@@ -44,7 +45,7 @@ class Game {
         this.generateBuildings();
         
         this.updateUI();
-        this.addMessage("Welcome to City Life! Start your new life.", "success");
+        this.addMessage(`Welcome to City Life ${this.VERSION}! Start your new life.`, "success");
         this.addMessage("Use WASD to move, E for actions menu, SPACE to interact", "");
         
         requestAnimationFrame((time) => this.gameLoop(time));
@@ -165,6 +166,9 @@ class Game {
         
         // Render time of day overlay
         this.renderTimeOverlay();
+        
+        // Render version info
+        this.renderVersionInfo();
     }
     
     renderTimeOverlay() {
@@ -179,6 +183,13 @@ class Game {
             this.ctx.fillStyle = `rgba(0, 0, 50, ${alpha})`;
             this.ctx.fillRect(0, 0, this.width, this.height);
         }
+    }
+    
+    renderVersionInfo() {
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        this.ctx.font = '10px monospace';
+        this.ctx.textAlign = 'right';
+        this.ctx.fillText(this.VERSION, this.width - 10, this.height - 10);
     }
     
     interact() {
