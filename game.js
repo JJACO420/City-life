@@ -186,10 +186,12 @@ class Game {
     }
     
     renderVersionInfo() {
+        this.ctx.save();
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
         this.ctx.font = '10px monospace';
         this.ctx.textAlign = 'right';
         this.ctx.fillText(this.VERSION, this.width - 10, this.height - 10);
+        this.ctx.restore();
     }
     
     interact() {
