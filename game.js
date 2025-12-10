@@ -1,5 +1,6 @@
 // City Life - Complex Life Simulation Game
 // Main Game Engine
+// Version: Alpha 0.3
 
 class Game {
     constructor() {
@@ -25,6 +26,11 @@ class Game {
         this.actionMenuOpen = false;
         this.currentInteraction = null;
         
+        // Weather system
+        this.weather = 'clear'; // clear, rain, snow, fog
+        this.weatherTimer = 0;
+        this.weatherDuration = 0;
+        
         // Constants
         this.NPC_COUNT = 50;
         this.BUILDING_COUNT = 30;
@@ -32,6 +38,7 @@ class Game {
         this.DAYS_TO_YEARS = 1 / 365;
         this.RANDOM_EVENT_PROBABILITY = 0.3;
         this.MAX_MESSAGE_COUNT = 20;
+        this.BASE_SPEED = 0.8; // Reduced from 2 for slower movement
         
         this.init();
     }
@@ -119,21 +126,51 @@ class Game {
             this.updateUI();
         }
         
-        // Handle movement
+        // Handle movement with stamina-based speed
         if (!this.actionMenuOpen) {
-            const speed = 2;
+            // Calculate speed based on stamina
+            let speed = this.BASE_SPEED;
+            if (this.player.stamina < 30) {
+                speed *= 0.5; // Half speed when tired
+            } else if (this.player.stamina < 60) {
+                speed *= 0.75; // 75% speed when low stamina
+            }
+            
+            // Movement with stamina drain
+            let moved = false;
             if (this.keys['w'] || this.keys['arrowup']) {
                 this.player.y = Math.max(0, this.player.y - speed);
+                moved = true;
             }
             if (this.keys['s'] || this.keys['arrowdown']) {
                 this.player.y = Math.min(this.world.height - 1, this.player.y + speed);
+                moved = true;
             }
             if (this.keys['a'] || this.keys['arrowleft']) {
                 this.player.x = Math.max(0, this.player.x - speed);
+                moved = true;
             }
             if (this.keys['d'] || this.keys['arrowright']) {
                 this.player.x = Math.min(this.world.width - 1, this.player.x + speed);
+                moved = true;
             }
+            
+            // Drain stamina when moving
+            if (moved) {
+                this.player.stamina = Math.max(0, this.player.stamina - 0.05 * dt * 60);
+            } else {
+                // Regenerate stamina when standing still
+                this.player.stamina = Math.min(100, this.player.stamina + 0.1 * dt * 60);
+            }
+        }
+        
+        // Update weather system
+        this.updateWeather(dt);
+        
+        // Skill degradation over time
+        if (Math.random() < 0.0001) {
+            this.player.intelligence = Math.max(10, this.player.intelligence - 1);
+            this.player.strength = Math.max(10, this.player.strength - 1);
         }
         
         // Update camera
@@ -165,14 +202,73 @@ class Game {
         
         // Render time of day overlay
         this.renderTimeOverlay();
+        
+        // Render weather effects
+        this.renderWeather();
+    }
+    
+    updateWeather(dt) {
+        this.weatherTimer += dt;
+        
+        // Change weather periodically
+        if (this.weatherTimer > this.weatherDuration) {
+            const weatherTypes = ['clear', 'clear', 'clear', 'rain', 'fog', 'snow'];
+            this.weather = weatherTypes[Math.floor(Math.random() * weatherTypes.length)];
+            this.weatherDuration = Math.random() * 120 + 60; // 1-3 minutes
+            this.weatherTimer = 0;
+            
+            const weatherMessages = {
+                'rain': '🌧️ It started raining...',
+                'snow': '❄️ Snow is falling!',
+                'fog': '🌫️ A thick fog has rolled in.',
+                'clear': '☀️ The weather cleared up!'
+            };
+            
+            if (weatherMessages[this.weather]) {
+                this.addMessage(weatherMessages[this.weather], 'event');
+            }
+        }
+        
+        // Weather effects on gameplay
+        if (this.weather === 'rain') {
+            this.player.happiness = Math.max(0, this.player.happiness - 0.01 * dt);
+        } else if (this.weather === 'clear' && this.timeOfDay > 8 && this.timeOfDay < 18) {
+            this.player.happiness = Math.min(100, this.player.happiness + 0.005 * dt);
+        }
+    }
+    
+    renderWeather() {
+        if (this.weather === 'rain') {
+            // Rain effect
+            this.ctx.fillStyle = 'rgba(100, 150, 200, 0.3)';
+            for (let i = 0; i < 100; i++) {
+                const x = Math.random() * this.width;
+                const y = (Math.random() * this.height + this.gameTime * 300) % this.height;
+                this.ctx.fillRect(x, y, 1, 10);
+            }
+        } else if (this.weather === 'snow') {
+            // Snow effect
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            for (let i = 0; i < 50; i++) {
+                const x = (Math.random() * this.width + this.gameTime * 20) % this.width;
+                const y = (Math.random() * this.height + this.gameTime * 50) % this.height;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, 2, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        } else if (this.weather === 'fog') {
+            // Fog effect
+            this.ctx.fillStyle = 'rgba(200, 200, 200, 0.2)';
+            this.ctx.fillRect(0, 0, this.width, this.height);
+        }
     }
     
     renderTimeOverlay() {
         let alpha = 0;
         if (this.timeOfDay < 6 || this.timeOfDay > 20) {
-            alpha = 0.4; // Night
+            alpha = 0.5; // Night - darker
         } else if (this.timeOfDay < 8 || this.timeOfDay > 18) {
-            alpha = 0.2; // Dawn/Dusk
+            alpha = 0.25; // Dawn/Dusk
         }
         
         if (alpha > 0) {
@@ -829,14 +925,35 @@ class Game {
                         return;
                     }
                     
-                    // Draw NPC
-                    ctx.fillStyle = this.color;
-                    ctx.fillRect(screenX, screenY, tileSize, tileSize);
+                    // Enhanced NPC with more detail
                     
-                    // Draw eyes
+                    // Body
+                    ctx.fillStyle = this.color;
+                    ctx.fillRect(screenX + 3, screenY + 7, 10, 6);
+                    
+                    // Legs
+                    const legColor = this.color.replace('70%', '40%');
+                    ctx.fillStyle = legColor;
+                    ctx.fillRect(screenX + 4, screenY + 13, 3, 3);
+                    ctx.fillRect(screenX + 9, screenY + 13, 3, 3);
+                    
+                    // Head
+                    ctx.fillStyle = '#FFE0BD';
+                    ctx.fillRect(screenX + 4, screenY + 2, 8, 6);
+                    
+                    // Hair
+                    const hairColors = ['#4a3728', '#2c1b10', '#d4af37', '#ff6347'];
+                    ctx.fillStyle = hairColors[Math.floor(this.age / 10) % hairColors.length];
+                    ctx.fillRect(screenX + 4, screenY + 1, 8, 2);
+                    
+                    // Eyes
                     ctx.fillStyle = '#000';
-                    ctx.fillRect(screenX + 4, screenY + 4, 3, 3);
-                    ctx.fillRect(screenX + 9, screenY + 4, 3, 3);
+                    ctx.fillRect(screenX + 5, screenY + 4, 2, 1);
+                    ctx.fillRect(screenX + 9, screenY + 4, 2, 1);
+                    
+                    // Shadow
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                    ctx.fillRect(screenX + 4, screenY + 15, 8, 1);
                 }
             };
             
@@ -872,37 +989,112 @@ class Game {
                         return;
                     }
                     
-                    // Draw building
+                    // Draw shadow
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                    ctx.fillRect(screenX + 2, screenY + 2, this.width * tileSize, this.height * tileSize);
+                    
+                    // Draw building main body
                     ctx.fillStyle = this.color;
                     ctx.fillRect(screenX, screenY, this.width * tileSize, this.height * tileSize);
+                    
+                    // Draw roof with gradient effect
+                    const roofHeight = tileSize;
+                    ctx.fillStyle = this.color.replace(')', ', 0.7)').replace('rgb', 'rgba').replace('#', 'rgba(');
+                    // Make roof darker
+                    const darkRoof = this.adjustBrightness(this.color, -30);
+                    ctx.fillStyle = darkRoof;
+                    ctx.beginPath();
+                    ctx.moveTo(screenX - 4, screenY);
+                    ctx.lineTo(screenX + this.width * tileSize / 2, screenY - roofHeight);
+                    ctx.lineTo(screenX + this.width * tileSize + 4, screenY);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Roof outline
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
                     
                     // Draw border
                     ctx.strokeStyle = '#000';
                     ctx.lineWidth = 2;
                     ctx.strokeRect(screenX, screenY, this.width * tileSize, this.height * tileSize);
                     
-                    // Draw windows
-                    ctx.fillStyle = '#87CEEB';
+                    // Draw windows with frames
                     for (let wx = 1; wx < this.width - 1; wx += 2) {
                         for (let wy = 1; wy < this.height - 1; wy += 2) {
+                            // Window frame
+                            ctx.fillStyle = '#333';
+                            ctx.fillRect(
+                                screenX + wx * tileSize,
+                                screenY + wy * tileSize,
+                                tileSize,
+                                tileSize
+                            );
+                            // Window glass
+                            ctx.fillStyle = '#87CEEB';
                             ctx.fillRect(
                                 screenX + wx * tileSize + 2,
                                 screenY + wy * tileSize + 2,
                                 tileSize - 4,
                                 tileSize - 4
                             );
+                            // Window reflection
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                            ctx.fillRect(
+                                screenX + wx * tileSize + 2,
+                                screenY + wy * tileSize + 2,
+                                tileSize - 6,
+                                4
+                            );
                         }
                     }
                     
-                    // Draw label
+                    // Draw door at bottom center
+                    const doorWidth = tileSize * 1.5;
+                    const doorHeight = tileSize * 2;
+                    const doorX = screenX + (this.width * tileSize - doorWidth) / 2;
+                    const doorY = screenY + this.height * tileSize - doorHeight;
+                    
+                    ctx.fillStyle = '#654321';
+                    ctx.fillRect(doorX, doorY, doorWidth, doorHeight);
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(doorX, doorY, doorWidth, doorHeight);
+                    
+                    // Door knob
+                    ctx.fillStyle = '#FFD700';
+                    ctx.fillRect(doorX + doorWidth - 6, doorY + doorHeight / 2, 3, 3);
+                    
+                    // Draw label with background
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                    ctx.fillRect(
+                        screenX + 5,
+                        screenY - 15,
+                        this.width * tileSize - 10,
+                        12
+                    );
                     ctx.fillStyle = '#FFF';
-                    ctx.font = '10px monospace';
+                    ctx.font = 'bold 10px monospace';
                     ctx.textAlign = 'center';
                     ctx.fillText(
                         this.name,
                         screenX + (this.width * tileSize) / 2,
-                        screenY - 5
+                        screenY - 6
                     );
+                },
+                
+                adjustBrightness(color, amount) {
+                    if (color.startsWith('#')) {
+                        let r = parseInt(color.slice(1, 3), 16);
+                        let g = parseInt(color.slice(3, 5), 16);
+                        let b = parseInt(color.slice(5, 7), 16);
+                        r = Math.max(0, Math.min(255, r + amount));
+                        g = Math.max(0, Math.min(255, g + amount));
+                        b = Math.max(0, Math.min(255, b + amount));
+                        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                    }
+                    return color;
                 }
             };
             
@@ -921,6 +1113,7 @@ class Game {
         this.updateStatBar('healthBar', this.player.health);
         this.updateStatBar('energyBar', this.player.energy);
         this.updateStatBar('hungerBar', this.player.hunger);
+        this.updateStatBar('staminaBar', this.player.stamina);
         this.updateStatBar('happinessBar', this.player.happiness);
         
         // Update other stats
@@ -967,6 +1160,7 @@ class Player {
         this.health = 100;
         this.energy = 100;
         this.hunger = 100;
+        this.stamina = 100; // New stamina stat
         this.happiness = 75;
         
         // Attributes
@@ -980,6 +1174,10 @@ class Player {
         this.totalMoneyEarned = 0;
         this.educationLevel = 0;
         this.relationships = [];
+        
+        // Visual properties
+        this.direction = 'down'; // down, up, left, right
+        this.animFrame = 0;
     }
     
     generateName() {
@@ -1019,27 +1217,64 @@ class Player {
         const screenX = (this.x - camera.x) * tileSize;
         const screenY = (this.y - camera.y) * tileSize;
         
-        // Draw player character (pixelated style)
+        // Enhanced player character with more detail
+        
+        // Body (shirt)
         ctx.fillStyle = '#00d9ff';
-        ctx.fillRect(screenX, screenY, tileSize, tileSize);
+        ctx.fillRect(screenX + 3, screenY + 7, 10, 6);
         
-        // Draw face
+        // Legs (pants)
+        ctx.fillStyle = '#1a5f7a';
+        ctx.fillRect(screenX + 4, screenY + 13, 3, 3);
+        ctx.fillRect(screenX + 9, screenY + 13, 3, 3);
+        
+        // Head (skin)
         ctx.fillStyle = '#FFE0BD';
-        ctx.fillRect(screenX + 2, screenY + 2, tileSize - 4, tileSize - 4);
+        ctx.fillRect(screenX + 4, screenY + 2, 8, 6);
         
-        // Draw eyes
+        // Hair
+        ctx.fillStyle = '#4a3728';
+        ctx.fillRect(screenX + 4, screenY + 1, 8, 2);
+        ctx.fillRect(screenX + 3, screenY + 2, 2, 2);
+        ctx.fillRect(screenX + 11, screenY + 2, 2, 2);
+        
+        // Eyes
         ctx.fillStyle = '#000';
-        ctx.fillRect(screenX + 4, screenY + 4, 2, 2);
-        ctx.fillRect(screenX + 10, screenY + 4, 2, 2);
+        ctx.fillRect(screenX + 5, screenY + 4, 2, 2);
+        ctx.fillRect(screenX + 9, screenY + 4, 2, 2);
         
-        // Draw smile
-        ctx.fillRect(screenX + 5, screenY + 10, 6, 1);
+        // Mouth
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(screenX + 6, screenY + 7, 4, 1);
         
-        // Draw name above
+        // Arms
+        ctx.fillStyle = '#00d9ff';
+        ctx.fillRect(screenX + 2, screenY + 8, 2, 4);
+        ctx.fillRect(screenX + 12, screenY + 8, 2, 4);
+        
+        // Hands
+        ctx.fillStyle = '#FFE0BD';
+        ctx.fillRect(screenX + 2, screenY + 11, 2, 2);
+        ctx.fillRect(screenX + 12, screenY + 11, 2, 2);
+        
+        // Add shadow for depth
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fillRect(screenX + 4, screenY + 15, 8, 1);
+        
+        // Draw name above with background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(screenX - 5, screenY - 10, tileSize + 10, 8);
         ctx.fillStyle = '#FFF';
-        ctx.font = '10px monospace';
+        ctx.font = '9px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(this.name, screenX + tileSize / 2, screenY - 5);
+        ctx.fillText(this.name, screenX + tileSize / 2, screenY - 4);
+        
+        // Stamina indicator (if low)
+        if (this.stamina < 30) {
+            ctx.fillStyle = 'rgba(255, 100, 100, 0.6)';
+            ctx.font = '12px monospace';
+            ctx.fillText('💤', screenX + tileSize + 2, screenY);
+        }
     }
 }
 
@@ -1049,20 +1284,28 @@ class World {
         this.height = height;
         this.tileSize = tileSize;
         
-        // Generate terrain
+        // Generate enhanced terrain with more variety
         this.tiles = [];
         for (let y = 0; y < height; y++) {
             this.tiles[y] = [];
             for (let x = 0; x < width; x++) {
                 const rand = Math.random();
-                if (rand < 0.1) {
-                    this.tiles[y][x] = { type: 'tree', color: '#228B22' };
+                const noise = (Math.sin(x * 0.1) + Math.cos(y * 0.1)) * 0.5;
+                
+                if (rand < 0.08) {
+                    this.tiles[y][x] = { type: 'tree', color: '#228B22', variant: Math.floor(Math.random() * 3) };
+                } else if (rand < 0.12) {
+                    this.tiles[y][x] = { type: 'flower', color: '#FF69B4', variant: Math.floor(Math.random() * 4) };
                 } else if (rand < 0.15) {
-                    this.tiles[y][x] = { type: 'flower', color: '#FF69B4' };
-                } else if (rand < 0.3) {
+                    this.tiles[y][x] = { type: 'rock', color: '#808080', variant: Math.floor(Math.random() * 2) };
+                } else if (rand < 0.25) {
                     this.tiles[y][x] = { type: 'path', color: '#A9A9A9' };
-                } else {
+                } else if (rand < 0.27) {
+                    this.tiles[y][x] = { type: 'water', color: '#4682B4' };
+                } else if (noise > 0.3) {
                     this.tiles[y][x] = { type: 'grass', color: '#7CFC00' };
+                } else {
+                    this.tiles[y][x] = { type: 'grass', color: '#90EE90' }; // Light grass
                 }
             }
         }
@@ -1080,19 +1323,77 @@ class World {
                 const screenX = (x - camera.x) * this.tileSize;
                 const screenY = (y - camera.y) * this.tileSize;
                 
-                // Draw tile
+                // Draw base tile
                 ctx.fillStyle = tile.color;
                 ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
                 
-                // Add texture
+                // Add enhanced textures and details
                 if (tile.type === 'grass') {
+                    // Grass texture with more detail
                     ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
                     if ((x + y) % 2 === 0) {
                         ctx.fillRect(screenX, screenY, this.tileSize / 2, this.tileSize / 2);
                     }
+                    // Add grass blades
+                    ctx.fillStyle = 'rgba(50, 150, 50, 0.3)';
+                    ctx.fillRect(screenX + 2, screenY + 6, 2, 4);
+                    ctx.fillRect(screenX + 8, screenY + 3, 2, 5);
+                    ctx.fillRect(screenX + 12, screenY + 7, 2, 3);
+                    
                 } else if (tile.type === 'tree') {
+                    // Enhanced tree with trunk and leaves
+                    // Trunk
+                    ctx.fillStyle = '#654321';
+                    ctx.fillRect(screenX + 6, screenY + 8, 4, 6);
+                    // Leaves/canopy
+                    ctx.fillStyle = '#228B22';
+                    ctx.fillRect(screenX + 2, screenY + 2, 12, 8);
                     ctx.fillStyle = '#006400';
-                    ctx.fillRect(screenX + 4, screenY + 4, 8, 8);
+                    ctx.fillRect(screenX + 4, screenY + 4, 8, 6);
+                    // Highlight
+                    ctx.fillStyle = 'rgba(144, 238, 144, 0.4)';
+                    ctx.fillRect(screenX + 4, screenY + 3, 4, 3);
+                    
+                } else if (tile.type === 'flower') {
+                    // Enhanced flowers with stems
+                    ctx.fillStyle = '#228B22';
+                    ctx.fillRect(screenX + 7, screenY + 8, 2, 6);
+                    // Flower colors
+                    const flowerColors = ['#FF69B4', '#FFD700', '#FF6347', '#9370DB'];
+                    ctx.fillStyle = flowerColors[tile.variant || 0];
+                    ctx.fillRect(screenX + 6, screenY + 6, 4, 4);
+                    // Center
+                    ctx.fillStyle = '#FFD700';
+                    ctx.fillRect(screenX + 7, screenY + 7, 2, 2);
+                    
+                } else if (tile.type === 'rock') {
+                    // Enhanced rock
+                    ctx.fillStyle = '#696969';
+                    ctx.fillRect(screenX + 4, screenY + 6, 8, 6);
+                    ctx.fillRect(screenX + 6, screenY + 4, 6, 4);
+                    // Highlight
+                    ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+                    ctx.fillRect(screenX + 6, screenY + 5, 3, 2);
+                    
+                } else if (tile.type === 'water') {
+                    // Animated water with ripples
+                    ctx.fillStyle = '#4682B4';
+                    ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+                    // Ripple effect
+                    ctx.fillStyle = 'rgba(100, 149, 237, 0.3)';
+                    if ((x + y + Math.floor(Date.now() / 500)) % 3 === 0) {
+                        ctx.fillRect(screenX + 2, screenY + 2, 4, 1);
+                        ctx.fillRect(screenX + 8, screenY + 10, 5, 1);
+                    }
+                    
+                } else if (tile.type === 'path') {
+                    // Enhanced path with texture
+                    ctx.fillStyle = '#A9A9A9';
+                    ctx.fillRect(screenX, screenY, this.tileSize, this.tileSize);
+                    // Path detail
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                    ctx.fillRect(screenX + 2, screenY + 4, 3, 2);
+                    ctx.fillRect(screenX + 8, screenY + 9, 4, 3);
                 }
             }
         }

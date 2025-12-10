@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>City Life - Life Simulation</title>
+    <title>City Life - Life Simulation (Alpha 0.3)</title>
     <style>
         * {
             margin: 0;
@@ -325,6 +325,12 @@
             </div>
         </div>
         <div class="stat-bar">
+            <div class="stat-label">Stamina</div>
+            <div class="bar-container">
+                <div class="bar-fill energy-bar" id="staminaBar" style="width: 100%;">100%</div>
+            </div>
+        </div>
+        <div class="stat-bar">
             <div class="stat-label">Happiness</div>
             <div class="bar-container">
                 <div class="bar-fill happiness-bar" id="happinessBar" style="width: 100%;">100%</div>
@@ -348,6 +354,9 @@
     <div id="startScreen">
         <div class="start-content">
             <div class="start-title">🏙️ CITY LIFE 🏙️</div>
+            <div class="start-description" style="font-size: 14px; color: #00d9ff; margin-bottom: 10px;">
+                Alpha 0.3
+            </div>
             <div class="start-description">
                 Welcome to City Life - An immersive life simulation game!<br>
                 Build your character, pursue careers, make friends, and live your best virtual life.
