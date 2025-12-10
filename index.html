@@ -188,9 +188,240 @@
             font-size: 12px;
             color: #aaa;
         }
+        
+        #startMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.98);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        #startMenu.hidden {
+            display: none;
+        }
+        
+        .start-menu-content {
+            background: #16213e;
+            padding: 40px;
+            border-radius: 15px;
+            border: 3px solid #00d9ff;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
+        }
+        
+        .start-menu-title {
+            font-size: 32px;
+            color: #00d9ff;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 8px rgba(0, 217, 255, 0.5);
+        }
+        
+        .start-menu-subtitle {
+            font-size: 14px;
+            color: #aaa;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .customize-section {
+            margin: 20px 0;
+        }
+        
+        .customize-label {
+            font-size: 14px;
+            color: #00d9ff;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .customize-input {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a2e;
+            border: 2px solid #0f3460;
+            border-radius: 5px;
+            color: #eee;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        .customize-input:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            flex: 1;
+            color: #eee;
+            font-size: 14px;
+        }
+        
+        .slider {
+            flex: 2;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #1a1a2e;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00d9ff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            background: #00b8e6;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #00d9ff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .slider-value {
+            width: 40px;
+            text-align: center;
+            color: #00d9ff;
+            font-weight: bold;
+        }
+        
+        .start-btn {
+            background: #00d9ff;
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 30px;
+            margin-top: 20px;
+            cursor: pointer;
+            border-radius: 8px;
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        .start-btn:hover {
+            background: #00b8e6;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 217, 255, 0.5);
+        }
+        
+        .start-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .random-btn {
+            background: #16213e;
+            color: #00d9ff;
+            border: 2px solid #00d9ff;
+            padding: 8px 15px;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .random-btn:hover {
+            background: #0f3460;
+        }
+        
+        .stat-points {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 16px;
+            color: #00d9ff;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
+    <div id="startMenu">
+        <div class="start-menu-content">
+            <div class="start-menu-title">🏙️ CITY LIFE 🏙️</div>
+            <div class="start-menu-subtitle">Alpha 0.2 - Customize Your Character</div>
+            
+            <div class="customize-section">
+                <label class="customize-label">Character Name</label>
+                <input type="text" id="characterName" class="customize-input" placeholder="Enter your name..." maxlength="30">
+                <button class="random-btn" onclick="game.randomizeName()">🎲 Random Name</button>
+            </div>
+            
+            <div class="customize-section">
+                <label class="customize-label">Starting Age</label>
+                <div class="slider-container">
+                    <span class="slider-label">Age:</span>
+                    <input type="range" id="startAge" class="slider" min="18" max="30" value="18">
+                    <span class="slider-value" id="ageValue">18</span>
+                </div>
+            </div>
+            
+            <div class="customize-section">
+                <label class="customize-label">Distribute Skill Points (100 points total)</label>
+                <div class="stat-points" id="pointsRemaining">Points Remaining: 100</div>
+                
+                <div class="slider-container">
+                    <span class="slider-label">🧠 Intelligence:</span>
+                    <input type="range" id="intelligenceSlider" class="slider" min="0" max="100" value="25">
+                    <span class="slider-value" id="intelligenceValue">25</span>
+                </div>
+                
+                <div class="slider-container">
+                    <span class="slider-label">💪 Strength:</span>
+                    <input type="range" id="strengthSlider" class="slider" min="0" max="100" value="25">
+                    <span class="slider-value" id="strengthValue">25</span>
+                </div>
+                
+                <div class="slider-container">
+                    <span class="slider-label">🎭 Charisma:</span>
+                    <input type="range" id="charismaSlider" class="slider" min="0" max="100" value="25">
+                    <span class="slider-value" id="charismaValue">25</span>
+                </div>
+                
+                <div class="slider-container">
+                    <span class="slider-label">🎨 Creativity:</span>
+                    <input type="range" id="creativitySlider" class="slider" min="0" max="100" value="25">
+                    <span class="slider-value" id="creativityValue">25</span>
+                </div>
+                
+                <button class="random-btn" onclick="game.randomizeStats()">🎲 Random Stats</button>
+            </div>
+            
+            <button class="start-btn" onclick="game.startGame()">Start Your Life</button>
+        </div>
+    </div>
+    
     <div id="gameContainer">
         <h1>🏙️ CITY LIFE - Alpha 0.2 🏙️</h1>
         <canvas id="gameCanvas" width="800" height="600"></canvas>

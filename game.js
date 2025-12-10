@@ -24,6 +24,17 @@ class Game {
         
         this.actionMenuOpen = false;
         this.currentInteraction = null;
+        this.gameStarted = false;
+        
+        // Character customization
+        this.customCharacter = {
+            name: '',
+            age: 18,
+            intelligence: 25,
+            strength: 25,
+            charisma: 25,
+            creativity: 25
+        };
         
         // Constants
         this.VERSION = "Alpha 0.2";
@@ -34,13 +45,124 @@ class Game {
         this.RANDOM_EVENT_PROBABILITY = 0.3;
         this.MAX_MESSAGE_COUNT = 20;
         
+        this.initStartMenu();
+    }
+    
+    initStartMenu() {
+        // Set up event listeners for sliders
+        const sliders = ['intelligence', 'strength', 'charisma', 'creativity'];
+        sliders.forEach(stat => {
+            const slider = document.getElementById(`${stat}Slider`);
+            const value = document.getElementById(`${stat}Value`);
+            if (slider && value) {
+                slider.addEventListener('input', () => {
+                    value.textContent = slider.value;
+                    this.updateStatPoints();
+                });
+            }
+        });
+        
+        // Age slider
+        const ageSlider = document.getElementById('startAge');
+        const ageValue = document.getElementById('ageValue');
+        if (ageSlider && ageValue) {
+            ageSlider.addEventListener('input', () => {
+                ageValue.textContent = ageSlider.value;
+            });
+        }
+        
+        // Generate random name on load
+        this.randomizeName();
+    }
+    
+    updateStatPoints() {
+        const intelligence = parseInt(document.getElementById('intelligenceSlider').value);
+        const strength = parseInt(document.getElementById('strengthSlider').value);
+        const charisma = parseInt(document.getElementById('charismaSlider').value);
+        const creativity = parseInt(document.getElementById('creativitySlider').value);
+        
+        const total = intelligence + strength + charisma + creativity;
+        const remaining = 100 - total;
+        
+        const pointsDisplay = document.getElementById('pointsRemaining');
+        pointsDisplay.textContent = `Points Remaining: ${remaining}`;
+        
+        if (remaining < 0) {
+            pointsDisplay.style.color = '#e74c3c';
+        } else {
+            pointsDisplay.style.color = '#00d9ff';
+        }
+        
+        return remaining;
+    }
+    
+    randomizeName() {
+        const firstNames = ["Alex", "Jordan", "Sam", "Taylor", "Morgan", "Casey", "Riley", "Avery", 
+                           "Quinn", "Drew", "Blake", "Cameron", "Dakota", "Sage"];
+        const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", 
+                          "Davis", "Rodriguez", "Martinez", "Anderson", "Taylor", "Thomas"];
+        
+        const randomName = `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`;
+        document.getElementById('characterName').value = randomName;
+    }
+    
+    randomizeStats() {
+        let remaining = 100;
+        const stats = ['intelligence', 'strength', 'charisma', 'creativity'];
+        
+        // Generate random values that sum to 100
+        const values = [];
+        for (let i = 0; i < stats.length - 1; i++) {
+            const value = Math.floor(Math.random() * (remaining - (stats.length - i - 1) * 10)) + 10;
+            values.push(value);
+            remaining -= value;
+        }
+        values.push(remaining); // Last stat gets the remainder
+        
+        // Shuffle to avoid bias
+        for (let i = values.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [values[i], values[j]] = [values[j], values[i]];
+        }
+        
+        // Apply values
+        stats.forEach((stat, index) => {
+            const slider = document.getElementById(`${stat}Slider`);
+            const value = document.getElementById(`${stat}Value`);
+            slider.value = values[index];
+            value.textContent = values[index];
+        });
+        
+        this.updateStatPoints();
+    }
+    
+    startGame() {
+        // Validate stat points
+        if (this.updateStatPoints() < 0) {
+            alert('Please distribute exactly 100 stat points!');
+            return;
+        }
+        
+        // Get character customization
+        this.customCharacter.name = document.getElementById('characterName').value.trim() || 'Anonymous';
+        this.customCharacter.age = parseInt(document.getElementById('startAge').value);
+        this.customCharacter.intelligence = parseInt(document.getElementById('intelligenceSlider').value);
+        this.customCharacter.strength = parseInt(document.getElementById('strengthSlider').value);
+        this.customCharacter.charisma = parseInt(document.getElementById('charismaSlider').value);
+        this.customCharacter.creativity = parseInt(document.getElementById('creativitySlider').value);
+        
+        // Hide start menu
+        document.getElementById('startMenu').classList.add('hidden');
+        
+        // Initialize game
+        this.gameStarted = true;
         this.init();
     }
     
     init() {
         this.setupInput();
         this.world = new World(100, 100, this.tileSize);
-        this.player = new Player(25, 25);
+        this.player = new Player(25, 25, this.customCharacter);
         this.generateNPCs(this.NPC_COUNT);
         this.generateBuildings();
         
@@ -966,13 +1088,27 @@ class Game {
 }
 
 class Player {
-    constructor(x, y) {
+    constructor(x, y, customCharacter = null) {
         this.x = x;
         this.y = y;
         
         // Basic info
-        this.name = this.generateName();
-        this.age = 18;
+        if (customCharacter && customCharacter.name) {
+            this.name = customCharacter.name;
+            this.age = customCharacter.age;
+            this.intelligence = customCharacter.intelligence;
+            this.strength = customCharacter.strength;
+            this.charisma = customCharacter.charisma;
+            this.creativity = customCharacter.creativity;
+        } else {
+            this.name = this.generateName();
+            this.age = 18;
+            this.intelligence = Math.floor(Math.random() * 20) + 30;
+            this.strength = Math.floor(Math.random() * 20) + 30;
+            this.charisma = Math.floor(Math.random() * 20) + 30;
+            this.creativity = Math.floor(Math.random() * 20) + 30;
+        }
+        
         this.job = "Unemployed";
         this.baseSalary = 50;
         
@@ -981,12 +1117,6 @@ class Player {
         this.energy = 100;
         this.hunger = 100;
         this.happiness = 75;
-        
-        // Attributes
-        this.intelligence = Math.floor(Math.random() * 20) + 30;
-        this.strength = Math.floor(Math.random() * 20) + 30;
-        this.charisma = Math.floor(Math.random() * 20) + 30;
-        this.creativity = Math.floor(Math.random() * 20) + 30;
         
         // Life progress
         this.money = 500;
