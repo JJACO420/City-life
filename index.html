@@ -188,6 +188,101 @@
             font-size: 12px;
             color: #aaa;
         }
+        
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.98);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+        
+        #startScreen.hidden {
+            display: none;
+        }
+        
+        .start-content {
+            max-width: 600px;
+            text-align: center;
+            padding: 40px;
+            background: rgba(15, 52, 96, 0.8);
+            border-radius: 20px;
+            border: 4px solid #00d9ff;
+            box-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
+        }
+        
+        .start-title {
+            font-size: 48px;
+            color: #00d9ff;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .start-description {
+            font-size: 16px;
+            color: #eee;
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+        
+        .start-features {
+            text-align: left;
+            margin: 20px auto;
+            max-width: 500px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .start-features li {
+            margin: 8px 0;
+            list-style: none;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .start-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        
+        #startButton {
+            background: linear-gradient(135deg, #00d9ff, #0088cc);
+            color: #fff;
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 217, 255, 0.3);
+        }
+        
+        #startButton:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 217, 255, 0.5);
+        }
+        
+        #startButton:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -248,6 +343,28 @@
     <div id="actionMenu">
         <div class="menu-title">Actions</div>
         <div id="menuContent"></div>
+    </div>
+    
+    <div id="startScreen">
+        <div class="start-content">
+            <div class="start-title">🏙️ CITY LIFE 🏙️</div>
+            <div class="start-description">
+                Welcome to City Life - An immersive life simulation game!<br>
+                Build your character, pursue careers, make friends, and live your best virtual life.
+            </div>
+            <ul class="start-features">
+                <li>Explore a randomly generated city with 50+ NPCs</li>
+                <li>Work your way up from Cashier to Doctor</li>
+                <li>Manage health, energy, hunger, and happiness</li>
+                <li>Visit buildings: restaurants, gyms, schools, offices, and more</li>
+                <li>Build relationships and improve your skills</li>
+                <li>Experience random life events and make choices</li>
+            </ul>
+            <button id="startButton">🎮 START YOUR LIFE 🎮</button>
+            <div class="start-description" style="margin-top: 20px; font-size: 13px; color: #888;">
+                Controls: WASD/Arrows to move • SPACE to interact • E for menu
+            </div>
+        </div>
     </div>
     
     <script src="game.js"></script>

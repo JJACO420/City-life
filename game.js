@@ -1102,5 +1102,15 @@ class World {
 // Start the game
 let game;
 window.addEventListener('load', () => {
-    game = new Game();
+    // Setup start button listener
+    const startButton = document.getElementById('startButton');
+    const startScreen = document.getElementById('startScreen');
+    
+    startButton.addEventListener('click', () => {
+        // Hide start screen
+        startScreen.classList.add('hidden');
+        
+        // Initialize and start the game
+        game = new Game();
+    });
 });
