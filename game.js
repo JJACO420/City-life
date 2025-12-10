@@ -25,6 +25,14 @@ class Game {
         this.actionMenuOpen = false;
         this.currentInteraction = null;
         
+        // Constants
+        this.NPC_COUNT = 50;
+        this.BUILDING_COUNT = 30;
+        this.SECONDS_PER_GAME_HOUR = 10;
+        this.DAYS_TO_YEARS = 1 / 365;
+        this.RANDOM_EVENT_PROBABILITY = 0.3;
+        this.MAX_MESSAGE_COUNT = 20;
+        
         this.init();
     }
     
@@ -32,7 +40,7 @@ class Game {
         this.setupInput();
         this.world = new World(100, 100, this.tileSize);
         this.player = new Player(25, 25);
-        this.generateNPCs(50);
+        this.generateNPCs(this.NPC_COUNT);
         this.generateBuildings();
         
         this.updateUI();
@@ -85,13 +93,13 @@ class Game {
         this.gameTime += dt;
         
         // Update time of day (1 hour every 10 seconds of real time)
-        if (this.gameTime > 10) {
+        if (this.gameTime > this.SECONDS_PER_GAME_HOUR) {
             this.gameTime = 0;
             this.timeOfDay = (this.timeOfDay + 1) % 24;
             
             if (this.timeOfDay === 0) {
                 this.dayCount++;
-                this.player.age(1 / 365); // Age by 1 day
+                this.player.age(this.DAYS_TO_YEARS); // Age by 1 day
                 this.triggerRandomEvent();
             }
             
@@ -206,14 +214,43 @@ class Game {
         const menu = document.getElementById('actionMenu');
         const content = document.getElementById('menuContent');
         
-        content.innerHTML = `
-            <div class="menu-title">${npc.name}</div>
-            <div class="info-text">Age: ${npc.age} | Job: ${npc.job}</div>
-            <button class="action-btn" onclick="game.talkToNPC('${npc.id}')">💬 Talk</button>
-            <button class="action-btn" onclick="game.complimentNPC('${npc.id}')">😊 Compliment</button>
-            <button class="action-btn" onclick="game.askForJob('${npc.id}')">💼 Ask about work</button>
-            <button class="action-btn" onclick="game.closeActionsMenu()">❌ Cancel</button>
-        `;
+        // Clear existing content
+        content.innerHTML = '';
+        
+        // Safely create elements
+        const title = document.createElement('div');
+        title.className = 'menu-title';
+        title.textContent = npc.name;
+        content.appendChild(title);
+        
+        const info = document.createElement('div');
+        info.className = 'info-text';
+        info.textContent = `Age: ${npc.age} | Job: ${npc.job}`;
+        content.appendChild(info);
+        
+        const talkBtn = document.createElement('button');
+        talkBtn.className = 'action-btn';
+        talkBtn.textContent = '💬 Talk';
+        talkBtn.onclick = () => this.talkToNPC(npc.id);
+        content.appendChild(talkBtn);
+        
+        const complimentBtn = document.createElement('button');
+        complimentBtn.className = 'action-btn';
+        complimentBtn.textContent = '😊 Compliment';
+        complimentBtn.onclick = () => this.complimentNPC(npc.id);
+        content.appendChild(complimentBtn);
+        
+        const jobBtn = document.createElement('button');
+        jobBtn.className = 'action-btn';
+        jobBtn.textContent = '💼 Ask about work';
+        jobBtn.onclick = () => this.askForJob(npc.id);
+        content.appendChild(jobBtn);
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'action-btn';
+        cancelBtn.textContent = '❌ Cancel';
+        cancelBtn.onclick = () => this.closeActionsMenu();
+        content.appendChild(cancelBtn);
         
         menu.classList.add('active');
         this.actionMenuOpen = true;
@@ -617,21 +654,28 @@ class Game {
         ];
         
         const menu = document.getElementById('menuContent');
-        let html = '<div class="info-text">Choose a new career:</div>';
+        menu.innerHTML = '';
+        
+        const info = document.createElement('div');
+        info.className = 'info-text';
+        info.textContent = 'Choose a new career:';
+        menu.appendChild(info);
         
         jobs.forEach(job => {
             const canApply = this.player.intelligence >= job.reqInt;
-            html += `
-                <button class="action-btn" ${!canApply ? 'disabled' : ''} 
-                    onclick="game.applyForJob('${job.name}', ${job.salary})">
-                    ${job.name} - $${job.salary}/day
-                    ${!canApply ? `(Requires ${job.reqInt} INT)` : ''}
-                </button>
-            `;
+            const btn = document.createElement('button');
+            btn.className = 'action-btn';
+            btn.disabled = !canApply;
+            btn.textContent = `${job.name} - $${job.salary}/day${!canApply ? ` (Requires ${job.reqInt} INT)` : ''}`;
+            btn.onclick = () => this.applyForJob(job.name, job.salary);
+            menu.appendChild(btn);
         });
         
-        html += '<button class="action-btn" onclick="game.closeActionsMenu()">❌ Cancel</button>';
-        menu.innerHTML = html;
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'action-btn';
+        cancelBtn.textContent = '❌ Cancel';
+        cancelBtn.onclick = () => this.closeActionsMenu();
+        menu.appendChild(cancelBtn);
     }
     
     applyForJob(jobName, salary) {
@@ -733,7 +777,7 @@ class Game {
             }
         ];
         
-        if (Math.random() < 0.3) { // 30% chance
+        if (Math.random() < this.RANDOM_EVENT_PROBABILITY) { // 30% chance
             const event = events[Math.floor(Math.random() * events.length)];
             this.addMessage(event.message, "event");
             event.effect();
@@ -812,7 +856,7 @@ class Game {
             { type: 'bar', name: 'Bar', width: 4, height: 3, color: '#8B008B' }
         ];
         
-        for (let i = 0; i < 30; i++) {
+        for (let i = 0; i < this.BUILDING_COUNT; i++) {
             const template = buildingTypes[Math.floor(Math.random() * buildingTypes.length)];
             const building = {
                 ...template,
@@ -902,7 +946,7 @@ class Game {
         log.scrollTop = log.scrollHeight;
         
         // Keep only last 20 messages
-        while (log.children.length > 20) {
+        while (log.children.length > this.MAX_MESSAGE_COUNT) {
             log.removeChild(log.firstChild);
         }
     }
