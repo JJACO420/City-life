@@ -107,17 +107,26 @@ class Game {
     }
     
     randomizeStats() {
-        let remaining = 100;
         const stats = ['intelligence', 'strength', 'charisma', 'creativity'];
-        
-        // Generate random values that sum to 100
         const values = [];
+        
+        // Generate random values that sum to 100, each at least 10
+        let remaining = 100;
+        
+        // Assign minimum 10 to each stat first
+        for (let i = 0; i < stats.length; i++) {
+            values.push(10);
+            remaining -= 10;
+        }
+        
+        // Distribute the remaining 60 points randomly
         for (let i = 0; i < stats.length - 1; i++) {
-            const value = Math.floor(Math.random() * (remaining - (stats.length - i - 1) * 10)) + 10;
-            values.push(value);
+            const maxForThis = remaining - (stats.length - i - 1); // Keep at least 1 for each remaining stat
+            const value = Math.floor(Math.random() * maxForThis);
+            values[i] += value;
             remaining -= value;
         }
-        values.push(remaining); // Last stat gets the remainder
+        values[stats.length - 1] += remaining; // Last stat gets the remainder
         
         // Shuffle to avoid bias
         for (let i = values.length - 1; i > 0; i--) {
@@ -138,8 +147,14 @@ class Game {
     
     startGame() {
         // Validate stat points
-        if (this.updateStatPoints() < 0) {
-            alert('Please distribute exactly 100 stat points!');
+        const remaining = this.updateStatPoints();
+        if (remaining !== 0) {
+            // Show error in the UI
+            const pointsDisplay = document.getElementById('pointsRemaining');
+            pointsDisplay.textContent = remaining > 0 
+                ? `Please distribute ${remaining} more points!` 
+                : `You have ${Math.abs(remaining)} too many points!`;
+            pointsDisplay.style.color = '#e74c3c';
             return;
         }
         
