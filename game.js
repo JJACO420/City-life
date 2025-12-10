@@ -997,10 +997,8 @@ class Game {
                     ctx.fillStyle = this.color;
                     ctx.fillRect(screenX, screenY, this.width * tileSize, this.height * tileSize);
                     
-                    // Draw roof with gradient effect
+                    // Draw roof with darker shade
                     const roofHeight = tileSize;
-                    ctx.fillStyle = this.color.replace(')', ', 0.7)').replace('rgb', 'rgba').replace('#', 'rgba(');
-                    // Make roof darker
                     const darkRoof = this.adjustBrightness(this.color, -30);
                     ctx.fillStyle = darkRoof;
                     ctx.beginPath();
