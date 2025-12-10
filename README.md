@@ -1,5 +1,7 @@
 # 🏙️ City Life - In-Depth Life Simulation Game
 
+**Current Version: Alpha 0.2**
+
 A complex life simulation game inspired by BitLife, featuring a randomly generated world with top-down pixelated graphics. Live your life, make choices, build relationships, pursue careers, and navigate through the challenges of city living!
 
 ## 🎮 Features
